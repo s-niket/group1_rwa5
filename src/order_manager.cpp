@@ -161,10 +161,10 @@ bool AriacOrderManager::PickAndPlace(const std::pair<std::string,geometry_msgs::
     bool quality_check = camera_.CheckQualityControl(agv_id, StampedPose_out.pose);
     ROS_WARN_STREAM("Dropped a part on AGV tray!");
 
-    if(quality_check) {
-        arm1_.DiscardPart(StampedPose_out.pose);
-        return quality_check;
-    }
+    // if(quality_check) {
+    //     arm1_.DiscardPart(StampedPose_out.pose);
+    //     return quality_check;
+    // }
 
     //ros::shutdown();
 
@@ -200,20 +200,26 @@ void AriacOrderManager::ExecuteOrder() {
             ROS_INFO_STREAM("Order ID: " << order_id);
             ROS_INFO_STREAM("Shipment Type: " << shipment_type);
             ROS_INFO_STREAM("AGV ID: " << agv_id);
+            int i =0;
             for (const auto &product: products){
                 ros::spinOnce();
                 // ROS_INFO_STREAM("Here 3");
                 product_type_pose_.first = product.type;
                 //ROS_INFO_STREAM("Product type: " << product_type_pose_.first);
                 product_type_pose_.second = product.pose;
+                ROS_INFO_STREAM("Order Count: " << i);
                 ROS_INFO_STREAM("Product pose: " << product_type_pose_.second.position.x);
-                do {
-                    pick_n_place_success =  PickAndPlace(product_type_pose_, agv_id);    
-                }
-                while(pick_n_place_success);               // The condition is reversed
+                // do {
+                //     pick_n_place_success =  PickAndPlace(product_type_pose_, agv_id);    
+                // }
+                // while(pick_n_place_success);               // The condition is reversed
+                pick_n_place_success = PickAndPlace(product_type_pose_, agv_id);
+                i++;
             }
             SubmitAGV(1);
             ROS_INFO_STREAM("Submitting AGV 1");
+            ros::Duration(2.0).sleep();
+            ros::spinOnce();
             int finish=1;
             ROS_WARN("KIT COMPLETE");
             ros::shutdown();

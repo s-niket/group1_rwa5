@@ -288,8 +288,9 @@ void AriacSensorManager::BuildProductFrames(int camera_id){
                                         std::to_string(camera1_frame_counter_) + "_frame";
 
             product_frame_list_[msg.type].emplace_back(product_frame);
-            if(camera1_frame_counter_< 10)
-                {camera1_frame_counter_++;}
+            // if(camera1_frame_counter_< 10)
+            //     {camera1_frame_counter_++;}
+            camera1_frame_counter_++;
             // std::cout<< "camera frame 1 counter :  "<<camera1_frame_counter_<<'\n';
             
         }
@@ -302,8 +303,9 @@ void AriacSensorManager::BuildProductFrames(int camera_id){
                                         std::to_string(camera2_frame_counter_) + "_frame";
 
             product_frame_list_[msg.type].emplace_back(product_frame);
-            if(camera2_frame_counter_< 10)
-            	{camera2_frame_counter_++;}
+            // if(camera2_frame_counter_< 10)
+            // 	{camera2_frame_counter_++;}
+            camera2_frame_counter_++;
             // std::cout<< "camera frame 2 counter :  "<<camera2_frame_counter_<<'\n';
             
         }
@@ -316,8 +318,9 @@ void AriacSensorManager::BuildProductFrames(int camera_id){
                                         std::to_string(camera3_frame_counter_) + "_frame";
 
             product_frame_list_[msg.type].emplace_back(product_frame);
-            if(camera3_frame_counter_< 10)
-                {camera3_frame_counter_++;}
+            // if(camera3_frame_counter_< 10)
+            //     {camera3_frame_counter_++;}
+            camera3_frame_counter_++;
             // std::cout<< "camera frame 3 counter :  "<<camera3_frame_counter_<<'\n';
             
         }
@@ -330,8 +333,9 @@ void AriacSensorManager::BuildProductFrames(int camera_id){
                                         std::to_string(camera5_frame_counter_) + "_frame";
 
             product_frame_list_[msg.type].emplace_back(product_frame);
-            if(camera5_frame_counter_< 10)
-                {camera5_frame_counter_++;}
+            // if(camera5_frame_counter_< 10)
+                // {camera5_frame_counter_++;}
+            camera5_frame_counter_++;
             // std::cout<< "camera frame 5 counter :  "<<camera5_frame_counter_<<'\n';
             
         }
@@ -344,8 +348,9 @@ void AriacSensorManager::BuildProductFrames(int camera_id){
                                         std::to_string(camera6_frame_counter_) + "_frame";
             // std::cout << "Frame name: " << product_frame << std::endl;                                        
             product_frame_list_[msg.type].emplace_back(product_frame);
-            if(camera6_frame_counter_< 10)
-                {camera6_frame_counter_++;}
+            // if(camera6_frame_counter_< 10)
+            //     {camera6_frame_counter_++;}
+            camera6_frame_counter_++;
             // std::cout<< "camera frame 6 counter :  "<<camera6_frame_counter_<<'\n';
         }
         init_cam6 = true;
@@ -357,8 +362,9 @@ void AriacSensorManager::BuildProductFrames(int camera_id){
                                         std::to_string(camera7_frame_counter_) + "_frame";
 
             product_frame_list_[msg.type].emplace_back(product_frame);
-            if(camera7_frame_counter_< 10)
-                {camera7_frame_counter_++;}
+            // if(camera7_frame_counter_< 10)
+            //     {camera7_frame_counter_++;}
+            camera7_frame_counter_++;
             // std::cout<< "camera frame 7 counter :  "<<camera7_frame_counter_<<'\n';
         }
         init_cam7 = true;
@@ -391,7 +397,7 @@ geometry_msgs::Pose AriacSensorManager::GetPartPose(const std::string& src_frame
         ROS_INFO_STREAM("Getting part pose...");
 
         camera_tf_listener_.waitForTransform(src_frame, target_frame, ros::Time(0),
-                                             ros::Duration(3.0));
+                                             ros::Duration(3000.0));
         camera_tf_listener_.lookupTransform(src_frame, target_frame, ros::Time(0),
                                             camera_tf_transform_);
 

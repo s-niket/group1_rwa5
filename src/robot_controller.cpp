@@ -410,13 +410,13 @@ bool RobotController::PickPart(geometry_msgs::Pose& part_pose, std::string produ
     this->GripperToggle(true);
     ROS_INFO_STREAM("Going to waypoint...");
     
-    this->GoToTarget(part_pose);
+    this->GoToTarget({part_pose, temp_pose_1});
     // if(product_type=="piston_rod_part") this->GoToTarget(part_pose, delay);    // For conveyor belt pick-ups
     // else this->GoToTarget(part_pose);
     ros::spinOnce();
     while (!gripper_state_) {
         part_pose.position.z -= 0.01;
-        this->GoToTarget({temp_pose_1, part_pose});
+        this->GoToTarget({part_pose, temp_pose_1});
         ROS_INFO_STREAM("Actuating the gripper...");
         this->GripperToggle(true);
         ros::spinOnce();
