@@ -25,6 +25,7 @@ public:
     std::string GetProductFrame(std::string product_type);
     std::map<std::string, std::list<std::pair<std::string,geometry_msgs::Pose>>> GetOrder();
     bool PickAndPlace(std::pair<std::string,geometry_msgs::Pose> object_prop,int agvnum);
+    bool PickPartExchange(geometry_msgs::Pose part_pose, std::string product_type, std::string arm1, std::string arm2);
     void SubmitAGV(int num);
 
 private:

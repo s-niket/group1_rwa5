@@ -37,6 +37,7 @@ public:
     void SendRobotEnd();
     void SendRobotToJointValues(std::vector<double> joint_values);
     bool DropPart(geometry_msgs::Pose pose);
+    bool DropPartExchange(geometry_msgs::Pose pose);
     void GripperToggle(const bool& state);
     void GripperCallback(const osrf_gear::VacuumGripperState::ConstPtr& grip);
     void GripperStateCheck(geometry_msgs::Pose pose);
