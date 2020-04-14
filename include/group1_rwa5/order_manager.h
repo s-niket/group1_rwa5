@@ -32,7 +32,7 @@ private:
     ros::Subscriber order_subscriber_;
     std::vector<osrf_gear::Order> received_orders_;
     AriacSensorManager camera_;
-    RobotController arm1_;
+    RobotController arm1_, arm2_;
 //    RobotController arm2_;
     tf::TransformListener part_tf_listener_;
     std::pair<std::string,geometry_msgs::Pose> product_type_pose_;

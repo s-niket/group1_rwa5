@@ -18,16 +18,16 @@ orders:
     announcement_condition_value: 0.0
     shipment_count: 1
     products:
-      product_0:
-        type: order_part1
-        pose:
-          xyz: [0.1, -0.2, 0]
-          rpy: [0, 0, 0]
-      product_1:
-        type: order_part1
-        pose:
-          xyz: [-0.1, -0.2, 0]
-          rpy: [0, 0, 0]
+      # product_0:
+      #   type: order_part1
+      #   pose:
+      #     xyz: [0.1, -0.2, 0]
+      #     rpy: [0, 0, 0]
+      # product_1:
+      #   type: order_part1
+      #   pose:
+      #     xyz: [-0.1, -0.2, 0]
+      #     rpy: [0, 0, 0]
       product_2:
         type: order_part2
         pose:

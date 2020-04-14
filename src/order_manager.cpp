@@ -9,8 +9,8 @@
 
 
 
-//AriacOrderManager::AriacOrderManager(): arm1_{"arm1"}, arm2_{"arm2"}
-AriacOrderManager::AriacOrderManager(): arm1_{"arm1"}
+AriacOrderManager::AriacOrderManager(): arm1_{"arm1"}, arm2_{"arm2"}
+// AriacOrderManager::AriacOrderManager(): arm1_{"arm1"}
 {
     order_subscriber_ = order_manager_nh_.subscribe(
             "/ariac/orders", 10,
@@ -34,8 +34,9 @@ void AriacOrderManager::OrderCallback(const osrf_gear::Order::ConstPtr& order_ms
 std::string AriacOrderManager::GetProductFrame(std::string product_type) {
     //--Grab the last one from the list then remove it
     std::string product_frame;
+
     label:
-    if ((!product_frame_list_.empty())&&(product_frame_list_.size()==2)) {
+    if (!product_frame_list_.empty()) {
         product_frame = product_frame_list_[product_type].back();
         product_frame_list_[product_type].pop_back();
         return product_frame;
@@ -45,6 +46,7 @@ std::string AriacOrderManager::GetProductFrame(std::string product_type) {
         ros::spinOnce();
         ros::Duration(1.0).sleep();
         product_frame_list_ = camera_.get_product_frame_list();
+        ROS_WARN_STREAM("SIZE: " << product_frame_list_.size());
         goto label;
         //this->GetProductFrame(product_type);
         
@@ -60,7 +62,6 @@ bool AriacOrderManager::PickAndPlace(const std::pair<std::string,geometry_msgs::
     std::string product_frame = this->GetProductFrame(product_type);
     ROS_WARN_STREAM("Product frame >>>> " << product_frame);
     auto part_pose = camera_.GetPartPose("world",product_frame);
-
     //ROS_WARN_STREAM("Part pose obtained >>>> " << part_pose);
    
 
@@ -68,6 +69,8 @@ bool AriacOrderManager::PickAndPlace(const std::pair<std::string,geometry_msgs::
         part_pose.position.z += 0.08;
     //--task the robot to pick up this part
     bool failed_pick = arm1_.PickPart(part_pose,product_type);
+    ROS_WARN_STREAM("Sending Arm 2 towards AGV2");
+    arm2_.SendRobotEnd();
     ROS_WARN_STREAM("Picking up state " << failed_pick);
     ros::Duration(0.5).sleep();
 

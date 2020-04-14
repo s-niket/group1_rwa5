@@ -34,6 +34,7 @@ public:
     void GoToTarget(const geometry_msgs::Pose& pose);
     void GoToTarget(const geometry_msgs::Pose& pose, float delay);
     void SendRobotHome();
+    void SendRobotEnd();
     void SendRobotToJointValues(std::vector<double> joint_values);
     bool DropPart(geometry_msgs::Pose pose);
     void GripperToggle(const bool& state);
