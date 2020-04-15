@@ -21,6 +21,7 @@ public:
     AriacOrderManager();
     ~AriacOrderManager();
     void OrderCallback(const osrf_gear::Order::ConstPtr& order_msg);
+    bool CheckOrderUpdate();
     void ExecuteOrder();
     std::string GetProductFrame(std::string product_type);
     std::map<std::string, std::list<std::pair<std::string,geometry_msgs::Pose>>> GetOrder();

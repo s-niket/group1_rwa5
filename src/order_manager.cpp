@@ -6,7 +6,7 @@
 #include <osrf_gear/AGVControl.h>
 #include <ros/ros.h>
 #include <std_srvs/Trigger.h>
-
+#include <algorithm>
 
 
 AriacOrderManager::AriacOrderManager(): arm1_{"arm1"}, arm2_{"arm2"}
@@ -23,8 +23,78 @@ AriacOrderManager::~AriacOrderManager(){}
 void AriacOrderManager::OrderCallback(const osrf_gear::Order::ConstPtr& order_msg) {
     ROS_WARN(">>>>> OrderCallback");
     received_orders_.push_back(*order_msg);
+    // CheckOrderUpdate(*order_msg);
 }
 
+
+bool AriacOrderManager::CheckOrderUpdate() {
+    if(received_orders_.size() < 2) return true;
+
+    ROS_WARN_STREAM("Order update found!!");
+    ROS_INFO_STREAM("Updating order...");
+
+    auto prev__products = received_orders_[0].shipments[0].products;
+    auto updated_products = received_orders_[1].shipments[0].products;
+
+    // for(auto old_order: prev__products) {
+    //     ROS_INFO_STREAM("Old :" << old_order);
+    // }
+
+    // for(auto new_order: updated_products) {
+    //     ROS_INFO_STREAM("New :" << new_order);
+    // }
+
+    auto i = updated_products.begin();
+    for(auto old_order = prev__products.begin(); old_order<prev__products.end(); old_order++) {
+        bool discard = true, order_success = false;
+        for(auto new_order = updated_products.begin(); new_order<updated_products.end(); new_order++) {
+            order_success=false;
+            discard=true;
+            if(old_order->pose.position.x == new_order->pose.position.x && old_order->pose.position.y == new_order->pose.position.y 
+                    && old_order->pose.position.z == new_order->pose.position.z) {
+                if(old_order->type == new_order->type) {
+                    ROS_INFO_STREAM("Same part & pose found, no change for a " << new_order->type << " with pose: " << new_order->pose);
+                }
+                else {
+                    ROS_INFO_STREAM("Part " << old_order->type << " needs to be replaced by " << new_order->type << " at " << new_order->pose);
+                }
+                discard = false;
+                i=new_order;
+                order_success=true;
+                break;
+            }
+        }
+
+        for(auto new_order = updated_products.begin(); new_order<updated_products.end(); new_order++) {
+            // discard = true; 
+            // order_success = false;
+            if(!order_success) {
+                if(old_order->type == new_order->type) {
+                    if(old_order->pose.position.x != new_order->pose.position.x || old_order->pose.position.y != new_order->pose.position.y 
+                    || old_order->pose.position.z != new_order->pose.position.z) {
+                        ROS_INFO_STREAM("Same part but different pose found for a " << new_order->type << " with pose : " << new_order->pose << " and not pose: " << old_order->pose);
+                        discard = false;    
+                        order_success = true;
+                        i=new_order;
+                        break;
+                    }
+                }
+            }
+        }
+        if(order_success) updated_products.erase(i);
+        if(discard) {
+            ROS_WARN_STREAM("Part " << old_order->type << " not found in the new order, discarding...");    
+        }
+
+    }
+
+    ROS_INFO_STREAM("Orders yet to be fulfiled are: ");
+    for(auto new_order: updated_products) {
+        ROS_INFO_STREAM("Part " << new_order.type << " at " << new_order.pose);
+    }
+
+    return true;
+}
 
 /**
  * @brief Get the product frame for a product type
@@ -207,7 +277,7 @@ void AriacOrderManager::ExecuteOrder() {
                 product_type_pose_.first = product.type;
                 //ROS_INFO_STREAM("Product type: " << product_type_pose_.first);
                 product_type_pose_.second = product.pose;
-                ROS_INFO_STREAM("Order Count: " << i);
+                // ROS_INFO_STREAM("Order Count: " << i);
                 ROS_INFO_STREAM("Product pose: " << product_type_pose_.second.position.x);
                 // do {
                 //     pick_n_place_success =  PickAndPlace(product_type_pose_, agv_id);    
@@ -216,10 +286,16 @@ void AriacOrderManager::ExecuteOrder() {
                 pick_n_place_success = PickAndPlace(product_type_pose_, agv_id);
                 i++;
             }
-            SubmitAGV(1);
+            SubmitAGV(agv_id);
             ROS_INFO_STREAM("Submitting AGV 1");
             ros::Duration(2.0).sleep();
             ros::spinOnce();
+            bool update_check_success{false};
+
+            do {
+                update_check_success =  CheckOrderUpdate();
+            } 
+            while(!update_check_success);
             int finish=1;
             ROS_WARN("KIT COMPLETE");
             ros::shutdown();
