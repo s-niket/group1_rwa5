@@ -45,7 +45,7 @@ orders:
           rpy: [0, 0, 0]
   order_0_update_0:
     announcement_condition: wanted_products
-    announcement_condition_value: 4
+    announcement_condition_value: 1
     shipment_count: 1
     products:
       product_0:

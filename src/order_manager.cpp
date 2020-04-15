@@ -7,6 +7,7 @@
 #include <ros/ros.h>
 #include <std_srvs/Trigger.h>
 #include <algorithm>
+#include <deque>
 
 
 AriacOrderManager::AriacOrderManager(): arm1_{"arm1"}, arm2_{"arm2"}
@@ -26,6 +27,53 @@ void AriacOrderManager::OrderCallback(const osrf_gear::Order::ConstPtr& order_ms
     // CheckOrderUpdate(*order_msg);
 }
 
+bool AriacOrderManager::CheckIfPartNeeded(osrf_gear::Product part,std::vector<osrf_gear::Product> product_list) {
+    for(auto new_order: product_list) {
+        if(part.type == new_order.type) return true;
+    }
+
+    return false;
+}
+
+bool AriacOrderManager::CanPlaceOnAGV(osrf_gear::Product part, std::deque <osrf_gear::Product> kit) {
+    for(auto part_on_agv : kit) {
+        if(part.pose.position.x == part_on_agv.pose.position.x && part.pose.position.y == part_on_agv.pose.position.y &&
+            part.pose.position.z == part_on_agv.pose.position.z) return false;
+    }
+    
+    return true;
+}
+
+std::vector<osrf_gear::Product> AriacOrderManager::RemovePartFromList(osrf_gear::Product part, std::vector<osrf_gear::Product> product_list) {
+    for(auto it = product_list.begin(); it<product_list.end(); it++) {
+        if(part.type == it->type) {
+            if(part.pose.position.x == it->pose.position.x && part.pose.position.y == it->pose.position.y && 
+                part.pose.position.z == it->pose.position.z) {
+                // ROS_WARN_STREAM("Removing from the list...");
+                std::swap(*it, product_list.back());
+                product_list.pop_back();
+                return product_list;
+            }
+        }
+    }
+}   
+
+osrf_gear::Product AriacOrderManager::GetUpdatedPose(osrf_gear::Product part, std::vector<osrf_gear::Product> product_list) {
+    for(auto product : product_list) {
+        if(part.type == product.type) return product;
+    }
+}
+
+
+bool AriacOrderManager::DiscardPartOnAGV(geometry_msgs::Pose part_pose, string agv_id) {
+    if(agv_id== "arm2") {
+        return true;        // write for this function
+    }
+    else {
+
+    }
+
+}
 
 bool AriacOrderManager::CheckOrderUpdate() {
     if(received_orders_.size() < 2) return true;
@@ -36,63 +84,63 @@ bool AriacOrderManager::CheckOrderUpdate() {
     auto prev__products = received_orders_[0].shipments[0].products;
     auto updated_products = received_orders_[1].shipments[0].products;
 
-    // for(auto old_order: prev__products) {
-    //     ROS_INFO_STREAM("Old :" << old_order);
+    // ROS_WARN_STREAM("The updated order is: ");
+    // for(auto x: updated_products) {
+    //     ROS_INFO_STREAM(x);
     // }
 
-    // for(auto new_order: updated_products) {
-    //     ROS_INFO_STREAM("New :" << new_order);
-    // }
+    std::deque <osrf_gear::Product> old_kit;
 
-    auto i = updated_products.begin();
-    for(auto old_order = prev__products.begin(); old_order<prev__products.end(); old_order++) {
-        bool discard = true, order_success = false;
-        for(auto new_order = updated_products.begin(); new_order<updated_products.end(); new_order++) {
-            order_success=false;
-            discard=true;
-            if(old_order->pose.position.x == new_order->pose.position.x && old_order->pose.position.y == new_order->pose.position.y 
-                    && old_order->pose.position.z == new_order->pose.position.z) {
-                if(old_order->type == new_order->type) {
-                    ROS_INFO_STREAM("Same part & pose found, no change for a " << new_order->type << " with pose: " << new_order->pose);
-                }
-                else {
-                    ROS_INFO_STREAM("Part " << old_order->type << " needs to be replaced by " << new_order->type << " at " << new_order->pose);
-                }
-                discard = false;
-                i=new_order;
-                order_success=true;
-                break;
-            }
-        }
-
-        for(auto new_order = updated_products.begin(); new_order<updated_products.end(); new_order++) {
-            // discard = true; 
-            // order_success = false;
-            if(!order_success) {
-                if(old_order->type == new_order->type) {
-                    if(old_order->pose.position.x != new_order->pose.position.x || old_order->pose.position.y != new_order->pose.position.y 
-                    || old_order->pose.position.z != new_order->pose.position.z) {
-                        ROS_INFO_STREAM("Same part but different pose found for a " << new_order->type << " with pose : " << new_order->pose << " and not pose: " << old_order->pose);
-                        discard = false;    
-                        order_success = true;
-                        i=new_order;
-                        break;
-                    }
-                }
-            }
-        }
-        if(order_success) updated_products.erase(i);
-        if(discard) {
-            ROS_WARN_STREAM("Part " << old_order->type << " not found in the new order, discarding...");    
-        }
-
+    for(auto old_order: prev__products) {
+        old_kit.push_back(old_order);
     }
 
-    ROS_INFO_STREAM("Orders yet to be fulfiled are: ");
-    for(auto new_order: updated_products) {
-        ROS_INFO_STREAM("Part " << new_order.type << " at " << new_order.pose);
+    ROS_INFO_STREAM("Kit on the AGV consists of...");
+    for(int i=0; i<old_kit.size(); i++) {
+        ROS_INFO_STREAM("Part : " << old_kit.at(i));
     }
 
+    ROS_WARN_STREAM("Updating the kit...");
+
+    geometry_msgs::Pose temp_pose;
+    temp_pose.position.x = 0.08;
+    temp_pose.position.y = 2.88;
+    temp_pose.position.z = 0.8;
+    osrf_gear::Product part;
+
+    while(!old_kit.empty()) {
+        part = old_kit.front();
+        old_kit.pop_front();
+        bool needed = CheckIfPartNeeded(part, updated_products);
+        if(!needed) {
+            ROS_INFO_STREAM("Part " << part.type << " is not needed, discarding...");
+            DiscardPartOnAGV(part.pose, agv_id);
+        }
+        else{
+            bool can_place = CanPlaceOnAGV(part, old_kit);
+            if(can_place) {
+                osrf_gear::Product final_product = GetUpdatedPose(part, updated_products);
+                ROS_INFO_STREAM("Placing part " << final_product.type << " in new position: " << final_product.pose);
+                updated_products = RemovePartFromList(final_product, updated_products);
+            }
+            else {
+                ROS_INFO_STREAM("Placing part at temp position " << temp_pose.position);
+                part.pose.position.x = temp_pose.position.x;
+                part.pose.position.y = temp_pose.position.y;
+                part.pose.position.z = temp_pose.position.z;
+                temp_pose.position.x += 0.1;
+                old_kit.push_back(part);
+            }
+        }
+    }
+
+    ROS_INFO_STREAM("Parts yet to be fulfiled: ");
+    for(auto part: updated_products) {
+        ROS_INFO_STREAM("Part " << part);
+    }
+
+
+    ros::Duration(2.0).sleep();
     return true;
 }
 
