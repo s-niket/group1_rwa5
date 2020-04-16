@@ -41,6 +41,7 @@ public:
     void GripperToggle(const bool& state);
     void GripperCallback(const osrf_gear::VacuumGripperState::ConstPtr& grip);
     void GripperStateCheck(geometry_msgs::Pose pose);
+    bool PickAndPlaceUpdated(geometry_msgs::Pose pick_pose, geometry_msgs::Pose place_pose);
     bool PickPart(geometry_msgs::Pose& part_pose,std::string product_type);
     bool DiscardPart(geometry_msgs::Pose pose);
 

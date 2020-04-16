@@ -45,15 +45,15 @@ orders:
           rpy: [0, 0, 0]
   order_0_update_0:
     announcement_condition: wanted_products
-    announcement_condition_value: 1
+    announcement_condition_value: 4
     shipment_count: 1
     products:
-      product_0:
+      product_1:
         type: order_part1
         pose:
           xyz: [0.1, -0.2, 0]
           rpy: [0, 0, 0]
-      product_1:
+      product_0:
         type: order_part2
         pose:
           xyz: [-0.1, -0.2, 0]

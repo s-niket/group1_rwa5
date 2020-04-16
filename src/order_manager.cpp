@@ -36,9 +36,14 @@ bool AriacOrderManager::CheckIfPartNeeded(osrf_gear::Product part,std::vector<os
 }
 
 bool AriacOrderManager::CanPlaceOnAGV(osrf_gear::Product part, std::deque <osrf_gear::Product> kit) {
+    // ROS_INFO_STREAM("Product in hand: "<< part);
     for(auto part_on_agv : kit) {
+        // ROS_INFO_STREAM("Comparing with : " << part_on_agv);
         if(part.pose.position.x == part_on_agv.pose.position.x && part.pose.position.y == part_on_agv.pose.position.y &&
-            part.pose.position.z == part_on_agv.pose.position.z) return false;
+            part.pose.position.z == part_on_agv.pose.position.z) {
+            ROS_WARN_STREAM("Pose collition found...");
+            return false;    
+        }
     }
     
     return true;
@@ -65,13 +70,43 @@ osrf_gear::Product AriacOrderManager::GetUpdatedPose(osrf_gear::Product part, st
 }
 
 
-bool AriacOrderManager::DiscardPartOnAGV(geometry_msgs::Pose part_pose, string agv_id) {
+bool AriacOrderManager::DiscardPartOnAGV(geometry_msgs::Pose part_pose, std::string agv_id) {
+
+    geometry_msgs::PoseStamped StampedPose_in,StampedPose_out;
     if(agv_id== "arm2") {
         return true;        // write for this function
     }
     else {
-
+        StampedPose_in.header.frame_id = "/kit_tray_1";
+        StampedPose_in.pose = part_pose;
+        part_tf_listener_.transformPose("/world",StampedPose_in,StampedPose_out);
+        ROS_INFO_STREAM("StampedPose_int (" << StampedPose_in.pose.position.x <<","<< StampedPose_in.pose.position.y << "," << StampedPose_in.pose.position.z<<")");
+        ROS_INFO_STREAM("StampedPose_out (" << StampedPose_out.pose.position.x <<","<< StampedPose_out.pose.position.y << "," << StampedPose_out.pose.position.z<<")");
+        bool success = arm1_.DiscardPart(StampedPose_out.pose);
     }
+    return true;
+}
+
+
+bool AriacOrderManager::PickPartAtAGV(osrf_gear::Product final_product, geometry_msgs::Pose pickup, std::string agv_id) {
+    geometry_msgs::PoseStamped pick_StampedPose_in,pick_StampedPose_out, place_StampedPose_in, place_StampedPose_out;
+    if(agv_id== "arm2") {
+        return true;        // write for this function
+    }
+    else {
+        pick_StampedPose_in.header.frame_id = "/kit_tray_1";
+        pick_StampedPose_in.pose = pickup;
+        part_tf_listener_.transformPose("/world",pick_StampedPose_in,pick_StampedPose_out);
+        ROS_INFO_STREAM("Pick StampedPose_int (" << pick_StampedPose_in.pose.position.x <<","<< pick_StampedPose_in.pose.position.y << "," << pick_StampedPose_in.pose.position.z<<")");
+        ROS_INFO_STREAM("Pick StampedPose_out (" << pick_StampedPose_out.pose.position.x <<","<< pick_StampedPose_out.pose.position.y << "," << pick_StampedPose_out.pose.position.z<<")");
+        place_StampedPose_in.header.frame_id = "/kit_tray_1";
+        place_StampedPose_in.pose = final_product.pose;
+        part_tf_listener_.transformPose("/world",place_StampedPose_in,place_StampedPose_out);
+        ROS_INFO_STREAM("Place StampedPose_int (" << place_StampedPose_in.pose.position.x <<","<< place_StampedPose_in.pose.position.y << "," << place_StampedPose_in.pose.position.z<<")");
+        ROS_INFO_STREAM("Place StampedPose_out (" << place_StampedPose_out.pose.position.x <<","<< place_StampedPose_out.pose.position.y << "," << place_StampedPose_out.pose.position.z<<")");
+        arm1_.PickAndPlaceUpdated(pick_StampedPose_out.pose, place_StampedPose_out.pose);
+    }
+    return true;
 
 }
 
@@ -95,18 +130,20 @@ bool AriacOrderManager::CheckOrderUpdate() {
         old_kit.push_back(old_order);
     }
 
-    ROS_INFO_STREAM("Kit on the AGV consists of...");
-    for(int i=0; i<old_kit.size(); i++) {
-        ROS_INFO_STREAM("Part : " << old_kit.at(i));
-    }
+    // ROS_INFO_STREAM("Kit on the AGV consists of...");
+    // for(int i=0; i<old_kit.size(); i++) {
+    //     ROS_INFO_STREAM("Part : " << old_kit.at(i));
+    // }
 
     ROS_WARN_STREAM("Updating the kit...");
 
-    geometry_msgs::Pose temp_pose;
-    temp_pose.position.x = 0.08;
-    temp_pose.position.y = 2.88;
-    temp_pose.position.z = 0.8;
+    osrf_gear::Product temp_product;
+    temp_product.pose.position.x = 0.1;
+    temp_product.pose.position.y = 0.35;
+    temp_product.pose.position.z = 0;
+    temp_product.pose.orientation.w = 1;
     osrf_gear::Product part;
+    std::string agv_id = "arm1";  // Check for this!!!
 
     while(!old_kit.empty()) {
         part = old_kit.front();
@@ -117,18 +154,26 @@ bool AriacOrderManager::CheckOrderUpdate() {
             DiscardPartOnAGV(part.pose, agv_id);
         }
         else{
-            bool can_place = CanPlaceOnAGV(part, old_kit);
+            osrf_gear::Product final_product = GetUpdatedPose(part, updated_products);
+            bool can_place = CanPlaceOnAGV(final_product, old_kit);
             if(can_place) {
-                osrf_gear::Product final_product = GetUpdatedPose(part, updated_products);
-                ROS_INFO_STREAM("Placing part " << final_product.type << " in new position: " << final_product.pose);
+                if(part.pose.position.x == final_product.pose.position.x && part.pose.position.y == final_product.pose.position.y 
+                    && part.pose.position.z == final_product.pose.position.z) {
+                    ROS_INFO_STREAM("Part " << final_product.type << " already at updated position");
+                }
+                else {
+                ROS_INFO_STREAM("Placing part " << final_product.type << " in new position: " << final_product.pose << " from pose :" << part.pose);
+                PickPartAtAGV(final_product, part.pose, agv_id);
+                }
                 updated_products = RemovePartFromList(final_product, updated_products);
             }
             else {
-                ROS_INFO_STREAM("Placing part at temp position " << temp_pose.position);
-                part.pose.position.x = temp_pose.position.x;
-                part.pose.position.y = temp_pose.position.y;
-                part.pose.position.z = temp_pose.position.z;
-                temp_pose.position.x += 0.1;
+                ROS_INFO_STREAM("Placing part at temp position " << temp_product.pose.position);
+                PickPartAtAGV(temp_product, part.pose, agv_id);
+                part.pose.position.x = temp_product.pose.position.x;
+                part.pose.position.y = temp_product.pose.position.y;
+                part.pose.position.z = temp_product.pose.position.z;
+                temp_product.pose.position.x += 0.1;
                 old_kit.push_back(part);
             }
         }
@@ -137,6 +182,9 @@ bool AriacOrderManager::CheckOrderUpdate() {
     ROS_INFO_STREAM("Parts yet to be fulfiled: ");
     for(auto part: updated_products) {
         ROS_INFO_STREAM("Part " << part);
+        std::pair<std::string,geometry_msgs::Pose> product_type_pose (part.type, part.pose);
+        int agv = (agv_id == "any") ? 1 : agv - '0';
+        PickAndPlace(product_type_pose, 1);        // change this!
     }
 
 
@@ -197,7 +245,7 @@ bool AriacOrderManager::PickPartExchange(geometry_msgs::Pose part_pose, std::str
         arm1_.DropPartExchange(exchange_pose);
         exchange_joint_pose = {0.75, 1.5, -1.25, 2.4, 3.6, -1.51, 0};    //{lin_arm, shoulder_pan, shoulder_lift, elbow, w1, w2, w3}
         arm2_.SendRobotToJointValues(exchange_joint_pose);
-        exchange_pose.position.z -= 0.05;
+        exchange_pose.position.z -= 0.07;
         failed_pick = arm2_.PickPart(exchange_pose, product_type);   
     }
     return failed_pick;
@@ -334,8 +382,6 @@ void AriacOrderManager::ExecuteOrder() {
                 pick_n_place_success = PickAndPlace(product_type_pose_, agv_id);
                 i++;
             }
-            SubmitAGV(agv_id);
-            ROS_INFO_STREAM("Submitting AGV 1");
             ros::Duration(2.0).sleep();
             ros::spinOnce();
             bool update_check_success{false};
@@ -345,7 +391,10 @@ void AriacOrderManager::ExecuteOrder() {
             } 
             while(!update_check_success);
             int finish=1;
+            ros::Duration(2.0).sleep();
             ROS_WARN("KIT COMPLETE");
+            SubmitAGV(agv_id);
+            ROS_INFO_STREAM("Submitting AGV 1");
             ros::shutdown();
         }
 

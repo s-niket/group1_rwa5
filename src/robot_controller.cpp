@@ -356,30 +356,82 @@ bool RobotController::DiscardPart(geometry_msgs::Pose part_pose) {
     // Write for AGV2 
     ROS_INFO_STREAM("Discarding part...");
     bool discard_flag = false;
-    if(gripper_state_) {
+    // if(!discard_flag) {
         ROS_INFO_STREAM("Moving towards AGV...");
         auto AGV1_drop_position = home_joint_pose_;
         AGV1_drop_position = {1.00, 1.13, -1.34, 2.0, 4.12, 4.67, -4.27};    //{lin_arm, shoulder_pan, shoulder_lift, elbow, w1, w2, w3}
         this->SendRobotToJointValues(AGV1_drop_position);
-        this->GoToTarget(part_pose);
-        ros::Duration(2.0).sleep();
         ROS_INFO_STREAM("Actuating the gripper...");
         this->GripperToggle(true);
+        auto temp_pose = part_pose;
+        temp_pose.position.z += 0.15;
+        part_pose.position.z += 0.02;
+        this->GoToTarget({part_pose, temp_pose});
+        ros::Duration(1.0).sleep();
         ros::spinOnce();
+        while (!gripper_state_) {
+            part_pose.position.z -= 0.007;
+            this->GoToTarget({part_pose, temp_pose});
+            ROS_INFO_STREAM("Actuating the gripper...");
+            this->GripperToggle(true);
+            ros::spinOnce();
+        }
         auto drop_pose = part_pose;
-        drop_pose.position.x -= 1;
-        drop_pose.position.y -= 1;
+        drop_pose.position.x -= 0.5;
+        drop_pose.position.y -= 0.5;
+        drop_pose.position.z += 0.3;
         this->GoToTarget(drop_pose);
         ros::Duration(2.0).sleep();
         this->GripperToggle(false);
         ros::spinOnce();
         discard_flag = true;
+        this->SendRobotToJointValues(AGV1_drop_position);
 
-    }
+    // }
 
     ROS_WARN_STREAM("Discarded Part!");
     return discard_flag;
 }
+
+bool RobotController::PickAndPlaceUpdated(geometry_msgs::Pose pick_pose, geometry_msgs::Pose place_pose) {
+    // Write for AGV2 
+    ROS_INFO_STREAM("Updating part pose...");
+    bool update_flag = false;
+    // if(gripper_state_) {
+        ROS_INFO_STREAM("Moving towards AGV...");
+        auto AGV1_drop_position = home_joint_pose_;
+        AGV1_drop_position = {1.00, 1.13, -1.34, 2.0, 4.12, 4.67, -4.27};    //{lin_arm, shoulder_pan, shoulder_lift, elbow, w1, w2, w3}
+        this->SendRobotToJointValues(AGV1_drop_position);
+        auto temp_pose = pick_pose;
+        temp_pose.position.z += 0.15;
+        ROS_INFO_STREAM("Actuating the gripper...");
+        this->GripperToggle(true);
+        pick_pose.position.z += 0.02;
+        this->GoToTarget({pick_pose, temp_pose});
+        ros::Duration(1.0).sleep();
+        while (!gripper_state_) {
+            pick_pose.position.z -= 0.007;
+            this->GoToTarget({pick_pose, temp_pose});
+            ROS_INFO_STREAM("Actuating the gripper...");
+            this->GripperToggle(true);
+            ros::spinOnce();
+        }
+        ros::spinOnce();
+        auto drop_pose = place_pose;
+        drop_pose.position.z += 0.1;
+        this->GoToTarget(drop_pose);
+        ros::Duration(2.0).sleep();
+        this->GripperToggle(false);
+        ros::spinOnce();
+        update_flag = true;
+        this->SendRobotToJointValues(AGV1_drop_position);
+
+    // }
+
+    ROS_WARN_STREAM("Updated Part Pose!");
+    return update_flag;
+}
+
 
 void RobotController::GripperCallback(
         const osrf_gear::VacuumGripperState::ConstPtr& grip) {
@@ -404,7 +456,7 @@ bool RobotController::PickPart(geometry_msgs::Pose& part_pose, std::string produ
     
     
     auto temp_pose_1 = part_pose;
-    temp_pose_1.position.z += 0.5;
+    temp_pose_1.position.z += 0.2;
     // temp_pose_1.position.z += 0.75;
     ROS_INFO_STREAM("Actuating the gripper!");
     this->GripperToggle(true);
@@ -415,7 +467,7 @@ bool RobotController::PickPart(geometry_msgs::Pose& part_pose, std::string produ
     // else this->GoToTarget(part_pose);
     ros::spinOnce();
     while (!gripper_state_) {
-        part_pose.position.z -= 0.01;
+        part_pose.position.z -= 0.007;
         this->GoToTarget({part_pose, temp_pose_1});
         ROS_INFO_STREAM("Actuating the gripper...");
         this->GripperToggle(true);

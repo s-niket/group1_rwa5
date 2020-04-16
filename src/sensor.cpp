@@ -78,19 +78,19 @@ void AriacSensorManager::QualitySensor1Callback(const osrf_gear::LogicalCameraIm
 
 
     if (image_msg->models.size() == 0) {
-        ROS_INFO_STREAM_THROTTLE(50, "Quality Control Sensor 1 does not see anything");
+        ROS_INFO_STREAM_THROTTLE(100, "Quality Control Sensor 1 does not see anything");
     }
 
     quality_current_1_ = *image_msg;
-    ROS_INFO_STREAM_THROTTLE(50, "Quality Sensor 1 output:   " << quality_current_1_);
+    ROS_INFO_STREAM_THROTTLE(100, "Quality Sensor 1 output:   " << quality_current_1_);
 }
 
 void AriacSensorManager::QualitySensor2Callback(const osrf_gear::LogicalCameraImage::ConstPtr& image_msg) {
-    ROS_INFO_STREAM_THROTTLE(50,
+    ROS_INFO_STREAM_THROTTLE(100,
                              "Quality Control Sensor 2: '" << image_msg->models.size() << "' objects.");
 
     if (image_msg->models.size() == 0) {
-        ROS_INFO_STREAM_THROTTLE(50, "Quality Control Sensor 2 does not see anything");
+        ROS_INFO_STREAM_THROTTLE(100, "Quality Control Sensor 2 does not see anything");
     }
     quality_current_2_ = *image_msg;
 }
@@ -260,7 +260,7 @@ void AriacSensorManager::LogicalCamera8Callback(const osrf_gear::LogicalCameraIm
         ROS_INFO_STREAM_THROTTLE(50, "Logical Camera 8 does not see anything");
 
     current_parts_8_ = *image_msg;
-    ROS_INFO_STREAM_THROTTLE(50, "Logical Camera Sensor 8 output:   " << current_parts_8_);
+    // ROS_INFO_STREAM("Logical Camera Sensor 8 output:   " << current_parts_8_);
     this->BuildProductFrames(8);
 }
 
@@ -273,7 +273,7 @@ void AriacSensorManager::LogicalCamera9Callback(const osrf_gear::LogicalCameraIm
         ROS_INFO_STREAM_THROTTLE(50, "Logical Camera 9 does not see anything");
 
     current_parts_9_ = *image_msg;
-    ROS_INFO_STREAM_THROTTLE(50, "Logical Camera Sensor 9 output:   " << current_parts_9_);
+    // ROS_INFO_STREAM("Logical Camera Sensor 9 output:   " << current_parts_9_);
     this->BuildProductFrames(9);
 }
 
