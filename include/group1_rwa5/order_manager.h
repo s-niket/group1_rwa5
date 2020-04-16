@@ -22,14 +22,14 @@ public:
     AriacOrderManager();
     ~AriacOrderManager();
     void OrderCallback(const osrf_gear::Order::ConstPtr& order_msg);
-    bool CheckOrderUpdate();
+    bool CheckOrderUpdate(int count, int agv_id);
     void ExecuteOrder();
     std::string GetProductFrame(std::string product_type);
     bool CheckIfPartNeeded(osrf_gear::Product part,std::vector<osrf_gear::Product> product_list);
     bool CanPlaceOnAGV(osrf_gear::Product part, std::deque <osrf_gear::Product> kit);
     osrf_gear::Product GetUpdatedPose(osrf_gear::Product part, std::vector<osrf_gear::Product> product_list);
-    bool DiscardPartOnAGV(geometry_msgs::Pose part_pose, std::string agv_id);
-    bool PickPartAtAGV(osrf_gear::Product final_product,geometry_msgs::Pose pickup, std::string agv_id);
+    bool DiscardPartOnAGV(geometry_msgs::Pose part_pose, int agv_id);
+    bool PickPartAtAGV(osrf_gear::Product final_product,geometry_msgs::Pose pickup, int agv_id);
     std::vector<osrf_gear::Product> RemovePartFromList(osrf_gear::Product part, std::vector<osrf_gear::Product> product_list);
     std::map<std::string, std::list<std::pair<std::string,geometry_msgs::Pose>>> GetOrder();
     bool PickAndPlace(std::pair<std::string,geometry_msgs::Pose> object_prop,int agvnum);

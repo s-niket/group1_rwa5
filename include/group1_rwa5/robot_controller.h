@@ -67,7 +67,7 @@ private:
 
     std::string object;
     bool plan_success_;
-    std::vector<double> home_joint_pose_;
+    std::vector<double> home_joint_pose_, agv_drop_position_;
     geometry_msgs::Pose home_cart_pose_;
     geometry_msgs::Quaternion fixed_orientation_;
     geometry_msgs::Pose agv_position_;
